@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:mvc="http://www.springframework.org/schema/mvc" xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd">
+
+       <!-- 配置c3p0数据源 -->
+       <bean id="masterDataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource"
+             destroy-method="close"
+             p:driverClass="com.mysql.jdbc.Driver"
+             p:jdbcUrl="jdbc:mysql://10.1.1.56:3306/clkj"
+             p:user="clkj"
+             p:password="clkj"
+             p:maxPoolSize="20"
+             p:minPoolSize="5"
+             p:initialPoolSize="5"
+             p:maxIdleTime="30"/>
+
+
+        <bean id="slaveDataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource"
+              destroy-method="close"
+              p:driverClass="com.mysql.jdbc.Driver"
+              p:jdbcUrl="jdbc:mysql://localhost:3306/clkj"
+              p:user="clkj"
+              p:password="clkj"
+              p:maxPoolSize="20"
+              p:minPoolSize="5"
+              p:initialPoolSize="5"
+              p:maxIdleTime="30"/>
+
+        <bean id="dataSource" class="lenn.db.mysql.libs.DynamicDataSource">
+            <property name="targetDataSources">
+                <map key-type="java.lang.String">
+                    <entry key="master" value-ref="masterDataSource"></entry>
+                    <entry key="slave" value-ref="slaveDataSource"></entry>
+                </map>
+            </property>
+            <!--<property name="defaultTargetDataSource" ref="masterDataSource"></property>-->
+            <property name="defaultTargetDataSource" ref="slaveDataSource"></property>
+        </bean>
+
+        <!-- 配置hibernate -->
+        <bean id="sessionFactory"
+              class="org.springframework.orm.hibernate4.LocalSessionFactoryBean"
+              p:dataSource-ref="dataSource">
+
+            <!--扫描实体类所在的包-->
+            <property name="packagesToScan">
+                <list>
+                    <value>lenn.db.mysql.dao.entities</value>
+                </list>
+            </property>
+
+            <!--<property name="hibernateProperties">-->
+                <!--<props>-->
+                    <!--&lt;!&ndash;<prop key="hibernate.connection.url">jdbc:mysql://bitter-sql:3306/bitter</prop>&ndash;&gt;-->
+                    <!--<prop key="hibernate.connection.driver_class">com.mysql.jdbc.Driver</prop>-->
+                    <!--<prop key="hibernate.dialect">org.hibernate.dialect.MySQL5Dialect</prop>-->
+                    <!--<prop key="hibernate.show_sql">true</prop>-->
+                    <!--<prop key="hibernate.hbm2ddl.auto">update</prop>-->
+                <!--</props>-->
+            <!--</property>-->
+
+        </bean>
+
+    <!-- 定义事务管理器 -->
+    <bean id="transactionManager" class="org.springframework.orm.hibernate4.HibernateTransactionManager"
+          p:sessionFactory-ref="sessionFactory"/>
+    <tx:annotation-driven transaction-manager="transactionManager"/>
+
+    <mvc:annotation-driven/>
+    <context:annotation-config/>
+    <context:component-scan base-package="lenn.db.mysql.dao"/>
+    <context:component-scan base-package="lenn.db.mysql.service"/>
+    <context:component-scan base-package="lenn.db.mysql.web"/>
+
+    <!--启动 @AspectJ支持 -->
+    <context:component-scan base-package="lenn.db.mysql.aspect">
+        <context:include-filter type="annotation" expression="org.aspectj.lang.annotation.Aspect"/>
+    </context:component-scan>
+    <aop:aspectj-autoproxy />
+    <!--<bean class="org.springframework.aop.aspectj.annotation.AnnotationAwareAspectJAutoProxyCreator"/>-->
+
+</beans>
