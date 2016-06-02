@@ -1,0 +1,11 @@
+version: '2'
+services:
+  my-haproxy:
+    image: clkj.com/docker/haproxy:1.6
+    container_name: my-haproxy
+    restart: always
+    network_mode: "bridge"
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg
